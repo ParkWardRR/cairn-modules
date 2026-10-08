@@ -168,6 +168,70 @@ Honest list, so nothing reads as further along than it is:
   M3–M6 of the plan.
 - **`module/v1` is draft** and so is this. It constrains nothing yet.
 
+## Identity runs ahead of the pin
+
+`module/v1` §7 used to hash a module's **whole directory**, which meant editing a
+`README.md` changed the module's digest, the module-set identity and therefore — once the
+server folds it in — the store contract digest. A prose fix would have made a rebuilt
+store look like a different store. That is a false mismatch, and the project's fifth
+invariant is worth less every time it cries wolf.
+
+The contract was corrected: a module hashes over **its manifest and every file the manifest
+names** (`views[]`, `queries`, and any later key whose value is a path). No
+"except documentation" carve-out, and it extends by itself. `modgen` implements the
+corrected rule, and `the_hash_covers_declarations_and_not_prose` holds it to both halves —
+prose and undeclared files must not move the hash; the manifest and a declared view must.
+
+**So `modgen` is ahead of [`contracts.lock`](contracts.lock) on this one point.** The
+correction is unreleased: `contracts-v0.4.0` still carries the old §7 wording, and only a
+maintainer tags a contracts release. Nothing is broken by the gap — nothing consumes
+identity yet — but the pin should move to the tag that carries the new §7 as soon as one
+exists, and this paragraph should go with it.
+
+## CI
+
+One self-hosted runner, registered to this repository and installed by
+[`tools/runner/install-runner.sh`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/tools/runner/install-runner.sh)
+in the front-door repository, as a rootless Podman container under a shared memory cap.
+
+`tests/check-runners.sh` enforces what GitHub has no setting for: every job on the
+self-hosted runner and never a hosted one, every job carrying the same-repository guard
+so a fork's pull request cannot reach it, and no `pull_request_target` or `workflow_run`.
+`tests/check-runners-selftest.sh` proves that check can actually fail.
+
+## Contracts
+
+This repository pins the protocols it was built against in
+[`contracts.lock`](contracts.lock) — the tag **and** the commit — and fetches them into
+`.contracts/`:
+
+```sh
+scripts/fetch-contracts.sh
+```
+
+`CAIRN_CONTRACTS=<dir>` overrides the fetch, so a contract and a module can change
+together on a laptop. Current pin: **`contracts-v0.4.0`**, for
+[`module/v1`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/module/v1),
+[`engine/v1`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/engine/v1)
+and
+[`store/v1`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/store/v1).
+
+Adding a capture field means a change to **two** files in the contracts repository —
+`engine/v1`'s `$defs/field` and `module/v1`'s `$defs/engine_field` — a new contracts tag,
+and a bump here. `modgen` refuses to run when those two have drifted.
+
+## What is not here yet
+
+Honest list, so nothing reads as further along than it is:
+
+- **No module claims anything.** `boost` is a manifest and a README.
+- **No store SQL**, so there are no DuckDB tests to run. They arrive with the first real
+  derivation.
+- **No `ui/`, `ios/` or `analysis/` directories**, for the same reason.
+- **Nothing consumes `modgen`'s output.** The server, web, app and firmware halves are
+  M3–M6 of the plan.
+- **`module/v1` is draft** and so is this. It constrains nothing yet.
+
 ## Open question found while building this
 
 **A module's hash covers every file in its directory, including `README.md`.** That is

@@ -52,7 +52,8 @@ pub fn load(dir: &Path) -> Result<Module, String> {
         None => None,
     };
 
-    let sha256 = manifest::hash_dir(dir)?;
+    // Hashed from the declarations the manifest names, so it must be parsed first.
+    let sha256 = manifest::hash_declarations(dir, &manifest)?;
     let m = Module {
         manifest,
         dir: dir.to_path_buf(),

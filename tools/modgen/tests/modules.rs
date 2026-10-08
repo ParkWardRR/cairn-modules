@@ -317,6 +317,82 @@ fn identity_is_stable_and_content_sensitive() {
     );
 }
 
+/// The rule that module/v1 §7 was corrected to: a module's hash covers its declarations,
+/// not its directory. Editing prose must NOT move it — the module-set identity reaches the
+/// store contract digest, and a README fix that made a rebuilt store look like a different
+/// store would be a false mismatch. Editing the manifest, or a file the manifest names,
+/// must move it.
+#[test]
+fn the_hash_covers_declarations_and_not_prose() {
+    let tmp = std::env::temp_dir().join(format!("modgen-hash-{}", std::process::id()));
+    let dir = tmp.join("alpha");
+    std::fs::create_dir_all(dir.join("store")).unwrap();
+
+    let manifest = format!(
+        "schema: {}\nid: alpha\nversion: 1\nname: Alpha\nstatus: derived\nsources: [a]\nviews: [store/views.sql]\n",
+        manifest::MANIFEST_SCHEMA
+    );
+    std::fs::write(dir.join("module.yaml"), &manifest).unwrap();
+    std::fs::write(
+        dir.join("store/views.sql"),
+        "CREATE VIEW v_alpha_x AS SELECT 1;\n",
+    )
+    .unwrap();
+    std::fs::write(dir.join("README.md"), "# alpha\n\nFirst draft.\n").unwrap();
+
+    let read = || {
+        let text = std::fs::read_to_string(dir.join("module.yaml")).unwrap();
+        let m = manifest::parse_manifest(&text).unwrap();
+        manifest::hash_declarations(&dir, &m).unwrap()
+    };
+
+    let before = read();
+
+    // Prose: must not move the hash.
+    std::fs::write(dir.join("README.md"), "# alpha\n\nRewritten entirely.\n").unwrap();
+    assert_eq!(before, read(), "editing README.md changed the module hash");
+
+    // A file nobody declared: must not move it either.
+    std::fs::write(dir.join("scratch.txt"), "notes to self").unwrap();
+    assert_eq!(before, read(), "an undeclared file changed the module hash");
+
+    // A file the manifest names: must move it.
+    std::fs::write(
+        dir.join("store/views.sql"),
+        "CREATE VIEW v_alpha_x AS SELECT 2;\n",
+    )
+    .unwrap();
+    let after_sql = read();
+    assert_ne!(
+        before, after_sql,
+        "editing a declared view did not change the hash"
+    );
+
+    // The manifest itself: must move it.
+    std::fs::write(
+        dir.join("module.yaml"),
+        manifest.replace("version: 1", "version: 2"),
+    )
+    .unwrap();
+    assert_ne!(
+        after_sql,
+        read(),
+        "editing the manifest did not change the hash"
+    );
+
+    // A named file that is missing is an error, not a silently skipped one: a manifest
+    // claiming a view that is not there would otherwise hash as if it had none.
+    std::fs::remove_file(dir.join("store/views.sql")).unwrap();
+    let text = std::fs::read_to_string(dir.join("module.yaml")).unwrap();
+    let m = manifest::parse_manifest(&text).unwrap();
+    assert!(
+        manifest::hash_declarations(&dir, &m).is_err(),
+        "a missing declared file was skipped instead of refused"
+    );
+
+    std::fs::remove_dir_all(&tmp).ok();
+}
+
 /// A selection is strict: an unknown id or an empty list is an error, never a silent
 /// subset, because a build that quietly dropped a module is a build nobody asked for.
 #[test]

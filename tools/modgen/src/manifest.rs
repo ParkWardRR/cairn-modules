@@ -871,19 +871,34 @@ pub fn parse_queries(text: &str) -> Result<QueriesFile, String> {
 
 /// SHA-256 of a module directory: every file, in sorted path order, with CRLF read as LF
 /// so a checkout's line endings cannot change a module's identity.
-pub fn hash_dir(dir: &Path) -> Result<[u8; 32], String> {
+/// SHA-256 over a module's **declarations**: its manifest, then every file the manifest
+/// names (`views[]`, `queries`), sorted. Each contributes its module-relative path, a
+/// `0x00` byte, its bytes with CRLF read as LF, and a `0x00` byte.
+///
+/// Declarations only, not the directory. A `README.md` cannot change what a derivation
+/// computes or what a query returns, so it must not move the hash: the module-set identity
+/// reaches the store contract digest, and a prose fix that made a rebuilt store look like
+/// a different store would be a false mismatch. Invariant 5 is worth less every time it
+/// cries wolf.
+///
+/// Needs no "except documentation" carve-out, and extends by itself — a later key whose
+/// value is a path is covered the day it is added.
+pub fn hash_declarations(dir: &Path, m: &Manifest) -> Result<[u8; 32], String> {
     use sha2::{Digest, Sha256};
-    let mut files: Vec<PathBuf> = Vec::new();
-    collect(dir, &mut files)?;
-    files.sort();
+
+    let mut named: Vec<String> = m.views.clone();
+    if let Some(q) = &m.queries {
+        named.push(q.clone());
+    }
+    named.sort();
+    named.dedup();
+
     let mut h = Sha256::new();
-    for f in &files {
-        let rel = f
-            .strip_prefix(dir)
-            .unwrap_or(f)
-            .to_string_lossy()
-            .replace('\\', "/");
-        let bytes = std::fs::read(f).map_err(|e| format!("{}: {e}", f.display()))?;
+    // The manifest first, then the paths it names, so the order is fixed by the rule and
+    // not by a directory walk.
+    for rel in std::iter::once("module.yaml".to_string()).chain(named) {
+        let path = dir.join(&rel);
+        let bytes = std::fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
         h.update(rel.as_bytes());
         h.update([0u8]);
         h.update(normalise(&bytes));
@@ -905,18 +920,6 @@ fn normalise(b: &[u8]) -> Vec<u8> {
         }
     }
     out
-}
-
-fn collect(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), String> {
-    for e in std::fs::read_dir(dir).map_err(|e| format!("{}: {e}", dir.display()))? {
-        let p = e.map_err(|e| e.to_string())?.path();
-        if p.is_dir() {
-            collect(&p, out)?;
-        } else {
-            out.push(p);
-        }
-    }
-    Ok(())
 }
 
 pub fn hex16(h: &[u8; 32]) -> String {
