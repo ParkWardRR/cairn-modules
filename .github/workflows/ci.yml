@@ -15,6 +15,22 @@ permissions:
   contents: read
 
 jobs:
+  # A self-hosted runner on a public repository is only safe while every job stays on it
+  # and no job can be reached by a fork's pull request. GitHub has no setting for either,
+  # so the policy is a check. The same script runs in the other Cairn repositories.
+  runner-policy:
+    runs-on: [self-hosted, cairn]
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Every job is on the self-hosted runner
+        run: tests/check-runners.sh
+
+      - name: The policy check can actually fail
+        run: tests/check-runners-selftest.sh
+
   modules:
     runs-on: [self-hosted, cairn]
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository

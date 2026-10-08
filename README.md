@@ -124,6 +124,17 @@ against is not a check.
 | `go` | the server: the module set, its identity, derivations, views and queries, as data | **works** |
 | `nuxt`, `swift` | the web layer and the app | **absent on purpose.** They land with M4 and M6, when there is a consumer to shape them. Generating artefacts nobody reads would be guessing, and the guess would be committed |
 
+## CI
+
+One self-hosted runner, registered to this repository and installed by
+[`tools/runner/install-runner.sh`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/tools/runner/install-runner.sh)
+in the front-door repository, as a rootless Podman container under a shared memory cap.
+
+`tests/check-runners.sh` enforces what GitHub has no setting for: every job on the
+self-hosted runner and never a hosted one, every job carrying the same-repository guard
+so a fork's pull request cannot reach it, and no `pull_request_target` or `workflow_run`.
+`tests/check-runners-selftest.sh` proves that check can actually fail.
+
 ## Contracts
 
 This repository pins the protocols it was built against in
