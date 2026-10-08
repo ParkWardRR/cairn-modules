@@ -1,0 +1,27 @@
+[package]
+name = "modgen"
+version = "0.1.0"
+edition = "2021"
+description = "Validates a Cairn module set against the pinned contracts and emits what each surface needs"
+publish = false
+
+[lib]
+name = "modgen"
+path = "src/lib.rs"
+
+[[bin]]
+name = "modgen"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+# serde_yaml is archived upstream but is stable, small and rejects duplicate keys, which
+# is what this needs: a duplicate mapping key would otherwise let a reviewer see
+# `status: verified` while the loader reads `status: stub`. Swapping it touches
+# manifest::parse_manifest and parse_queries only.
+serde_yaml = "0.9"
+serde_json = "1"
+sha2 = "0.10"
+
+[profile.release]
+opt-level = 2

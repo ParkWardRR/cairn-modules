@@ -1,0 +1,8 @@
+# Fetched contracts (scripts/fetch-contracts.sh)
+/.contracts/
+
+# Rust build output
+/tools/modgen/target/
+
+# Generated per-surface artefacts
+/build/

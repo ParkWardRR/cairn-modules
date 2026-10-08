@@ -1,0 +1,27 @@
+# The boost module. DECLARATION ONLY: this manifest claims nothing yet.
+#
+# It exists at this stage to prove the thing a validator is most likely to get wrong --
+# that a module may be nothing but a manifest. A validator that only accepts the full
+# shape has hard-coded an assumption the `places` module would break on day one.
+#
+# What it will claim, once the server half lands:
+#   requires.store         boost.map_kpa, boost.baro_kpa, obd.rpm, obd.throttle_pct
+#   requires.engine_fields map_kpa, baro_kpa, rpm, throttle_pct
+#   derives                boost.boost_psi  (gauge pressure: MAP minus barometric)
+#   metrics                boost_psi, per wide-open-throttle pull, from v_pulls
+#   views                  v_boost_curve, v_pulls
+#   ui                     /boost
+#
+# None of that is here, because none of it is implemented. A manifest is a claim, and the
+# project's rule is that a stub claims nothing: see contracts/module/v1/spec.md section 3
+# and engine/v1's identical rule for engine profiles.
+schema: cairn.module/v1-draft
+id: boost
+version: 1
+name: Boost and pulls
+status: stub
+sources:
+  - "identity only. The interpretation this module will carry is in the web dashboard and
+    the server's analytical store today; nothing has moved yet, so this claims nothing"
+  - "contracts/module/v1/spec.md section 4 for the derivation it will own, and the
+    grandfathering rule that governs it"

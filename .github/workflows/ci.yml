@@ -1,0 +1,49 @@
+name: CI
+
+# modgen must agree with contracts/module/v1 and with the modules in this repository.
+#
+# Self-hosted jobs run only for pushes and for pull requests from branches of THIS
+# repository. A fork's pull request would otherwise run its own code on the machine that
+# also serves production.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  modules:
+    runs-on: [self-hosted, cairn]
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # contracts.lock names a tag AND the commit it must resolve to; both are checked,
+      # so a moved tag cannot change what this repository validates against.
+      - name: Fetch the pinned contracts
+        run: scripts/fetch-contracts.sh
+
+      # validate: every manifest against store/v1 and engine/v1, and the cross-module
+      #   rules. Also fails if the capture-field vocabulary has drifted between the two
+      #   contracts, which is the failure engine/v1 was created to end.
+      # vectors: contracts/module/v1's own 39 vectors against this implementation. modgen
+      #   is the second, independent implementation that contract's release gate names.
+      # test, fields, go: the Rust tests, then both emitters -- a generator that is never
+      #   run is a generator that does not work.
+      - name: Validate, run the contract vectors, test and generate
+        run: make check
+
+      # Non-empty only. Whether the Go artefact is gofmt-clean and vets is the server's
+      # gate, in the repository that compiles it: this job has no Go toolchain and should
+      # not grow one for a cosmetic check.
+      - name: The generated artefacts are not empty
+        run: |
+          test -s build/fields.txt
+          test -s build/modules_gen.go
