@@ -1,19 +1,56 @@
-# Cairn modules
+<!-- cairn-nav:start -->
+<p align="center"><b>Cairn is a family of six repositories.</b> Each builds, tests and releases on its own; they agree through the shared <a href="https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts">contracts</a>, and they share one <a href="https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/ROADMAP.md">roadmap</a>.</p>
+
+| Part | Repository | What it does | Stack | Docs | Issues | CI |
+|---|---|---|---|---|---|---|
+| Front door | [cairn-driving-log-selfhosted](https://github.com/ParkWardRR/cairn-driving-log-selfhosted) | Docs, roadmap, shared protocol contracts | Markdown · Go tools | [docs](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/issues) | [CI](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/actions) |
+| Dongle | [cairn-esp32-device-firmware](https://github.com/ParkWardRR/cairn-esp32-device-firmware) | In-car recorder: OBD-II, GNSS, IMU to encrypted SD bundles | C++ · C · Rust | [docs](https://github.com/ParkWardRR/cairn-esp32-device-firmware/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-esp32-device-firmware/issues) | [CI](https://github.com/ParkWardRR/cairn-esp32-device-firmware/actions) |
+| Phone | [cairn-ios-companion-app](https://github.com/ParkWardRR/cairn-ios-companion-app) | BLE relay, GPS assist, server client | Swift · SwiftUI | [docs](https://github.com/ParkWardRR/cairn-ios-companion-app/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-ios-companion-app/issues) | [CI](https://github.com/ParkWardRR/cairn-ios-companion-app/actions) |
+| Server | [cairn-vehicle-server](https://github.com/ParkWardRR/cairn-vehicle-server) | Verifies, decrypts, stores; serves app and dashboard | Go | [docs](https://github.com/ParkWardRR/cairn-vehicle-server/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-vehicle-server/issues) | [CI](https://github.com/ParkWardRR/cairn-vehicle-server/actions) |
+| Dashboard | [cairn-vehicle-web-dashboard](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard) | Browser UI: trips, places, engine, health | Nuxt · TypeScript | [docs](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/tree/main/docs) | [issues](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/issues) | [CI](https://github.com/ParkWardRR/cairn-vehicle-web-dashboard/actions) |
+| Modules | **[cairn-modules](https://github.com/ParkWardRR/cairn-modules)** ◀ you are here | Interpretation, separated from the logging core: one package per module | YAML · Rust | [readme](https://github.com/ParkWardRR/cairn-modules#readme) | [issues](https://github.com/ParkWardRR/cairn-modules/issues) | [CI](https://github.com/ParkWardRR/cairn-modules/actions) |
+
+<sub>Shared: [Roadmap](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/ROADMAP.md) · [Module system plan](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/docs/module-system-plan.md) · [module/v1 contract](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/module/v1) · [Architecture](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/docs/architecture.md) · [Threat model](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/docs/threat-model.md)</sub>
+<!-- cairn-nav:end -->
+<h1 align="center">Cairn modules</h1>
+<p align="center"><strong>Interpretation, separated from the logging core. One module is one package carrying its dongle, server, web and app parts together.</strong></p>
+
+<p align="center">
+  <a href="https://github.com/ParkWardRR/cairn-modules/actions"><img src="https://img.shields.io/github/actions/workflow/status/ParkWardRR/cairn-modules/ci.yml?style=flat-square&label=CI" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Blue_Oak_1.0.0-2E86C1?style=flat-square" alt="Blue Oak Model License 1.0.0"></a>
+  <img src="https://img.shields.io/badge/modgen-Rust-2E86C1?style=flat-square" alt="modgen, in Rust">
+  <img src="https://img.shields.io/badge/contracts-v0.4.0-2E86C1?style=flat-square" alt="contracts-v0.4.0">
+  <img src="https://img.shields.io/badge/module%2Fv1-draft-E67E22?style=flat-square" alt="module/v1 is draft">
+  <img src="https://img.shields.io/badge/modules-1_of_6-E67E22?style=flat-square" alt="One module of six">
+</p>
+
+---
 
 Cairn's core is **GPS logging management**: capture a drive, seal it, get it off the card
 against a verified receipt, decode it, keep it. A **module** is *interpretation* — what a
 reading means — and this repository is where modules live.
 
-One module is **one package carrying its dongle, server, web and app parts together**.
 Boost, fuel economy, fuel trims, driving style, the speedometer check and place kinds are
 each a module; the logging core is not.
 
-<sub>Shared: [Roadmap](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/ROADMAP.md) · [Module system plan](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/docs/module-system-plan.md) · [module/v1 contract](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/module/v1) · [Architecture](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/docs/architecture.md)</sub>
+> **One module is live, and five are not.** `boost` now owns the `boost.boost_psi`
+> derivation in the server's analytical store, as of M3 — so this is no longer a repository
+> that nothing reads. What it does **not** yet carry anywhere is a module **view**, a metric
+> or a named query, and the other five modules do not exist. See [MODULES.md](MODULES.md)
+> for what each module claims today, and the project's single
+> [roadmap](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/ROADMAP.md#m1m7--the-module-system--in-progress)
+> for M4 onward.
 
-> **Nothing here is wired into anything yet.** This repository is phase M2 of the plan: the
-> repository, the generator, and one module that is deliberately a manifest and nothing
-> else. The server, web, app and firmware halves arrive in M3–M6. See
-> [MODULES.md](MODULES.md) for what each module claims today.
+**Contents:**
+[Why it exists](#why-it-exists) ·
+[Not the retired plugin system](#this-is-not-the-plugin-system-that-was-retired) ·
+[Layout](#layout) ·
+[modgen](#modgen) ·
+[CI](#ci) ·
+[Contracts](#contracts) ·
+[What is not here yet](#what-is-not-here-yet) ·
+[Identity and the pin](#identity-runs-ahead-of-the-pin) ·
+[Licence](#licence)
 
 ## Why it exists
 
@@ -160,13 +197,25 @@ and a bump here. `modgen` refuses to run when those two have drifted.
 
 Honest list, so nothing reads as further along than it is:
 
-- **No module claims anything.** `boost` is a manifest and a README.
-- **No store SQL**, so there are no DuckDB tests to run. They arrive with the first real
-  derivation.
+- **One module of six exists.** `boost` is a manifest and a README; `fuel-mixture`,
+  `fuel-economy`, `driving-style`, `speedometer-check` and `places` are named in
+  [MODULES.md](MODULES.md) and not written. `fuel-mixture` is deliberately first of the
+  five, because it exercises the generic machinery hardest.
+- **No module view, metric or named query exists anywhere.** `boost` claims a derivation
+  and the four capture fields it needs, and nothing else — a metric must name a view this
+  module creates, and the views have not moved out of the server yet. Claiming them in a
+  manifest before they exist would be a manifest that lies.
 - **No `ui/`, `ios/` or `analysis/` directories**, for the same reason.
-- **Nothing consumes `modgen`'s output.** The server, web, app and firmware halves are
-  M3–M6 of the plan.
-- **`module/v1` is draft** and so is this. It constrains nothing yet.
+- **Only the server consumes `modgen`'s output.** The web, app and firmware halves are
+  M4–M6 of the plan, which is why the `nuxt` and `swift` emit targets are absent.
+- **`module/v1` is draft** and so is this.
+
+What *is* wired, so the list is not read as "nothing works": the server's
+`internal/modules` loads and validates a module set at runtime, resolves its requirements
+against the live catalogue and orders derivations topologically; `applyDerivations` runs
+them between the row load and the views; and `boost.boost_psi` is a real module-owned
+column. A module set that will not load is **fatal** there, because a module owns a
+column's definition.
 
 ## Identity runs ahead of the pin
 
@@ -182,73 +231,11 @@ names** (`views[]`, `queries`, and any later key whose value is a path). No
 corrected rule, and `the_hash_covers_declarations_and_not_prose` holds it to both halves —
 prose and undeclared files must not move the hash; the manifest and a declared view must.
 
-**So `modgen` is ahead of [`contracts.lock`](contracts.lock) on this one point.** The
-correction is unreleased: `contracts-v0.4.0` still carries the old §7 wording, and only a
-maintainer tags a contracts release. Nothing is broken by the gap — nothing consumes
-identity yet — but the pin should move to the tag that carries the new §7 as soon as one
-exists, and this paragraph should go with it.
-
-## CI
-
-One self-hosted runner, registered to this repository and installed by
-[`tools/runner/install-runner.sh`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/blob/main/tools/runner/install-runner.sh)
-in the front-door repository, as a rootless Podman container under a shared memory cap.
-
-`tests/check-runners.sh` enforces what GitHub has no setting for: every job on the
-self-hosted runner and never a hosted one, every job carrying the same-repository guard
-so a fork's pull request cannot reach it, and no `pull_request_target` or `workflow_run`.
-`tests/check-runners-selftest.sh` proves that check can actually fail.
-
-## Contracts
-
-This repository pins the protocols it was built against in
-[`contracts.lock`](contracts.lock) — the tag **and** the commit — and fetches them into
-`.contracts/`:
-
-```sh
-scripts/fetch-contracts.sh
-```
-
-`CAIRN_CONTRACTS=<dir>` overrides the fetch, so a contract and a module can change
-together on a laptop. Current pin: **`contracts-v0.4.0`**, for
-[`module/v1`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/module/v1),
-[`engine/v1`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/engine/v1)
-and
-[`store/v1`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/store/v1).
-
-Adding a capture field means a change to **two** files in the contracts repository —
-`engine/v1`'s `$defs/field` and `module/v1`'s `$defs/engine_field` — a new contracts tag,
-and a bump here. `modgen` refuses to run when those two have drifted.
-
-## What is not here yet
-
-Honest list, so nothing reads as further along than it is:
-
-- **No module claims anything.** `boost` is a manifest and a README.
-- **No store SQL**, so there are no DuckDB tests to run. They arrive with the first real
-  derivation.
-- **No `ui/`, `ios/` or `analysis/` directories**, for the same reason.
-- **Nothing consumes `modgen`'s output.** The server, web, app and firmware halves are
-  M3–M6 of the plan.
-- **`module/v1` is draft** and so is this. It constrains nothing yet.
-
-## Open question found while building this
-
-**A module's hash covers every file in its directory, including `README.md`.** That is
-what `module/v1` §7 says and what `modgen` does, so the two agree — but it means editing
-this prose changes the module's digest, and therefore the module-set identity, and
-therefore (from M3) the store contract digest. A documentation fix would make a rebuilt
-store look like a different store.
-
-That is a false positive: a README cannot change what a derivation computes. The rule
-that would be right is **the manifest plus every file the manifest names** — `views`,
-`queries`, and whatever keys are added later — which is precise, needs no
-"except documentation" carve-out, and extends by itself.
-
-Left as it stands deliberately. Nothing consumes identity yet, so nothing is wrong today;
-changing it means a `module/v1` edit, a new contracts tag and a re-pin here. The right
-moment is M3, when identity is first folded into the store digest and being wrong would
-actually cost something. Recorded here so it is a decision and not an oversight.
+**So `modgen` is ahead of [`contracts.lock`](contracts.lock) on this one point**, and the
+tag it needs now exists. `contracts-v0.4.0` carries the old §7 wording; the correction
+landed afterwards, and the server's `internal/modules` implements the same corrected rule.
+Nothing is broken by the gap — identity is not yet folded into the store digest — but the
+pin should move, and **this paragraph should go with it**.
 
 ## Licence
 
