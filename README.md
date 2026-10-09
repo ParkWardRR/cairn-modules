@@ -19,7 +19,7 @@
   <a href="https://github.com/ParkWardRR/cairn-modules/actions"><img src="https://img.shields.io/github/actions/workflow/status/ParkWardRR/cairn-modules/ci.yml?style=flat-square&label=CI" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Blue_Oak_1.0.0-2E86C1?style=flat-square" alt="Blue Oak Model License 1.0.0"></a>
   <img src="https://img.shields.io/badge/modgen-Rust-2E86C1?style=flat-square" alt="modgen, in Rust">
-  <img src="https://img.shields.io/badge/contracts-v0.4.0-2E86C1?style=flat-square" alt="contracts-v0.4.0">
+  <img src="https://img.shields.io/badge/contracts-v0.6.0-2E86C1?style=flat-square" alt="contracts-v0.6.0">
   <img src="https://img.shields.io/badge/module%2Fv1-draft-E67E22?style=flat-square" alt="module/v1 is draft">
   <img src="https://img.shields.io/badge/modules-1_of_6-E67E22?style=flat-square" alt="One module of six">
 </p>
@@ -49,7 +49,7 @@ each a module; the logging core is not.
 [CI](#ci) ·
 [Contracts](#contracts) ·
 [What is not here yet](#what-is-not-here-yet) ·
-[Identity and the pin](#identity-runs-ahead-of-the-pin) ·
+[Identity and prose](#identity-covers-declarations-not-prose) ·
 [Licence](#licence)
 
 ## Why it exists
@@ -183,7 +183,7 @@ scripts/fetch-contracts.sh
 ```
 
 `CAIRN_CONTRACTS=<dir>` overrides the fetch, so a contract and a module can change
-together on a laptop. Current pin: **`contracts-v0.4.0`**, for
+together on a laptop. Current pin: **`contracts-v0.6.0`**, for
 [`module/v1`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/module/v1),
 [`engine/v1`](https://github.com/ParkWardRR/cairn-driving-log-selfhosted/tree/main/contracts/engine/v1)
 and
@@ -217,7 +217,7 @@ them between the row load and the views; and `boost.boost_psi` is a real module-
 column. A module set that will not load is **fatal** there, because a module owns a
 column's definition.
 
-## Identity runs ahead of the pin
+## Identity covers declarations, not prose
 
 `module/v1` §7 used to hash a module's **whole directory**, which meant editing a
 `README.md` changed the module's digest, the module-set identity and therefore — once the
@@ -225,25 +225,19 @@ server folds it in — the store contract digest. A prose fix would have made a 
 store look like a different store. That is a false mismatch, and the project's fifth
 invariant is worth less every time it cries wolf.
 
-The contract was corrected: a module hashes over **its manifest and every file the manifest
-names** (`views[]`, `queries`, and any later key whose value is a path). No
-"except documentation" carve-out, and it extends by itself. `modgen` implements the
-corrected rule, and `the_hash_covers_declarations_and_not_prose` holds it to both halves —
-prose and undeclared files must not move the hash; the manifest and a declared view must.
+The contract was corrected, and `contracts-v0.6.0` carries it: a module hashes over **its
+manifest and every file the manifest names** (`views[]`, `queries`, and any later key whose
+value is a path). No "except documentation" carve-out, and it extends by itself. `modgen`
+implements the corrected rule, and `the_hash_covers_declarations_and_not_prose` holds it to
+both halves — prose and undeclared files must not move the hash; the manifest and a
+declared view must.
 
-**So `modgen` is ahead of [`contracts.lock`](contracts.lock) on this one point, and no tag
-carries the correction yet.** `contracts-v0.4.0` has the old §7 wording and so does
-`contracts-v0.5.0`; the fix is committed on the contracts repository's `main` and
-unreleased. The server's `internal/modules` implements the corrected rule too, so **two
-implementations are ahead of every existing tag**. Nothing is broken by the gap — identity
-is not yet folded into the store digest — but the pin should move as soon as a release
-carries it, and **this paragraph should go with it**.
-
-This repository also **cannot** move to `contracts-v0.5.0`, for an unrelated reason:
-`engine/v1` gained the `pedal_pct` capture field in that tag and `module/v1`'s
-`$defs/engine_field` did not, so `modgen validate` refuses the tree — which is exactly what
-`CheckVocabulary` is for, and it is why the pin here is still v0.4.0 while the other four
-consumers are on v0.5.0. The fix is in the same unreleased set.
+`modgen` and the server's `internal/modules` both implemented this before any tag carried
+it, so both were briefly ahead of their pins. Bumping to `contracts-v0.6.0` closed that,
+and it closed it without moving a digest: `boost` still hashes to `1f5f8633bcbd5ff8` and
+the one-module set to `808292016d9d2937`, which is the evidence that the two
+implementations had agreed with the corrected contract all along rather than merely
+agreeing with each other.
 
 ## Licence
 
