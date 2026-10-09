@@ -231,11 +231,19 @@ names** (`views[]`, `queries`, and any later key whose value is a path). No
 corrected rule, and `the_hash_covers_declarations_and_not_prose` holds it to both halves —
 prose and undeclared files must not move the hash; the manifest and a declared view must.
 
-**So `modgen` is ahead of [`contracts.lock`](contracts.lock) on this one point**, and the
-tag it needs now exists. `contracts-v0.4.0` carries the old §7 wording; the correction
-landed afterwards, and the server's `internal/modules` implements the same corrected rule.
-Nothing is broken by the gap — identity is not yet folded into the store digest — but the
-pin should move, and **this paragraph should go with it**.
+**So `modgen` is ahead of [`contracts.lock`](contracts.lock) on this one point, and no tag
+carries the correction yet.** `contracts-v0.4.0` has the old §7 wording and so does
+`contracts-v0.5.0`; the fix is committed on the contracts repository's `main` and
+unreleased. The server's `internal/modules` implements the corrected rule too, so **two
+implementations are ahead of every existing tag**. Nothing is broken by the gap — identity
+is not yet folded into the store digest — but the pin should move as soon as a release
+carries it, and **this paragraph should go with it**.
+
+This repository also **cannot** move to `contracts-v0.5.0`, for an unrelated reason:
+`engine/v1` gained the `pedal_pct` capture field in that tag and `module/v1`'s
+`$defs/engine_field` did not, so `modgen validate` refuses the tree — which is exactly what
+`CheckVocabulary` is for, and it is why the pin here is still v0.4.0 while the other four
+consumers are on v0.5.0. The fix is in the same unreleased set.
 
 ## Licence
 
