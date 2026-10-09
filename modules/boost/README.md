@@ -3,20 +3,39 @@
 Gauge pressure and what the engine did with it: boost against RPM, wide-open-throttle
 pulls, and peak boost per trip.
 
-**Status: `stub`. This module claims nothing.** It is a manifest and this file.
+**Status: `derived`.** It claims one derivation and the capture fields that derivation
+needs. It is still partial: no metric, no view, no page, no app gauge — because a metric
+must name a view this module creates, and the views have not moved yet. Claiming them
+before they exist would be a manifest that lies.
 
-## Why it exists already
+## What it claims now
 
-Two reasons, both deliberate.
+`boost.boost_psi` — gauge pressure in psi, **grandfathered**. `store/v1` declares the
+column and the server's decode path computes it today; this takes over the *definition*,
+not the values.
 
-It **reserves the id and records the intent**, so the eventual migration is a move rather
-than a design argument.
+```sql
+CASE WHEN map_kpa IS NOT NULL AND baro_kpa IS NOT NULL
+  THEN (map_kpa::DOUBLE - baro_kpa::DOUBLE) * 0.1450377 END
+```
 
-And it is the case a validator is most likely to get wrong. A module may legitimately be
-**nothing but a manifest** — no metric, no derivation, no capture field, not even a page.
-A validator that only accepts the full shape has hard-coded an assumption that the
-`places` module would break on its first day. `modgen` is held to that:
-`a_declaration_only_module_is_valid_and_generates_nothing`.
+Held to `format.OBDExtended.BoostPSI()` by the server's
+`TestBoostPSIDerivationReproducesTheReference`, over every manifold value 0..255 against
+eight barometric cases including 0, plus both absent cases — 2,056 combinations.
+
+**Two things the expression deliberately does not do**, both of which an earlier draft got
+wrong:
+
+- It does **not** exclude a saturated manifold reading (`map_kpa < 255`). Saturation is
+  excluded by the *views* that read this column, never by the column. Excluding it here
+  would silently turn every saturated sample's boost into `NULL`.
+- It does **not** treat a barometric reading of 0 as absence (`baro_kpa > 0`). The
+  reference treats 0 as a reading.
+
+That draft was in the contract's own `valid-boost.json` vector, and it took evaluating the
+expression against the reference to notice. The server's
+`TestTheRejectedExpressionReallyDiffers` now pins it so it cannot come back believed
+equivalent.
 
 ## What it will claim
 

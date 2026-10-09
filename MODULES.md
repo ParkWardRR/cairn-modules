@@ -5,7 +5,7 @@ One row per module, with what it actually claims today rather than what it is me
 
 | Module | Status | Claims today | Will carry |
 |---|---|---|---|
-| [`boost`](modules/boost/) | `stub` | **Declaration only.** No metric, no derivation, no capture field, no page | Gauge pressure from MAP and barometric, boost against RPM, WOT pull detection, peak boost |
+| [`boost`](modules/boost/) | `derived` | One derivation — `boost.boost_psi`, grandfathered — and the four capture fields it needs. No metric, view or page yet: a metric must name a view this module creates, and the views have not moved | Boost against RPM, WOT pull detection, peak boost, the `/boost` page |
 
 ## Planned, not yet present
 

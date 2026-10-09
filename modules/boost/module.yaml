@@ -1,27 +1,57 @@
-# The boost module. DECLARATION ONLY: this manifest claims nothing yet.
+# The boost module: gauge pressure, and what the engine did with it.
 #
-# It exists at this stage to prove the thing a validator is most likely to get wrong --
-# that a module may be nothing but a manifest. A validator that only accepts the full
-# shape has hard-coded an assumption the `places` module would break on day one.
+# status: derived -- every claim below was extracted from code that already worked, and is
+# proven against it rather than asserted. The derivation reproduces the column the server's
+# decode path computes today; see README.md and the equivalence test it names.
 #
-# What it will claim, once the server half lands:
-#   requires.store         boost.map_kpa, boost.baro_kpa, obd.rpm, obd.throttle_pct
-#   requires.engine_fields map_kpa, baro_kpa, rpm, throttle_pct
-#   derives                boost.boost_psi  (gauge pressure: MAP minus barometric)
-#   metrics                boost_psi, per wide-open-throttle pull, from v_pulls
-#   views                  v_boost_curve, v_pulls
-#   ui                     /boost
-#
-# None of that is here, because none of it is implemented. A manifest is a claim, and the
-# project's rule is that a stub claims nothing: see contracts/module/v1/spec.md section 3
-# and engine/v1's identical rule for engine profiles.
+# Still a partial module. It claims a derivation and the fields that derivation needs. It
+# claims no metric, no view, no page and no app gauge, because a metric must name a view
+# this module creates and the views have not moved yet. Claiming them here before they
+# exist would be a manifest that lies.
 schema: cairn.module/v1-draft
 id: boost
-version: 1
+version: 2
 name: Boost and pulls
-status: stub
+status: derived
 sources:
-  - "identity only. The interpretation this module will carry is in the web dashboard and
-    the server's analytical store today; nothing has moved yet, so this claims nothing"
-  - "contracts/module/v1/spec.md section 4 for the derivation it will own, and the
-    grandfathering rule that governs it"
+  - "MAP minus barometric is gauge pressure: contracts/format/v3/spec.md section 4.10, and
+    OBDExtended.BoostGaugeKPa / BoostPSI in the server's format package as the reference
+    implementation the format vectors pin"
+  - "the expression is held to that reference by the server's
+    TestBoostPSIDerivationReproducesTheReference, over every manifold value 0..255 against
+    eight barometric cases including 0 and both absent cases"
+
+requires:
+  # Read by the derivation. map_kpa and baro_kpa are what gauge pressure is computed from;
+  # rpm and throttle_pct are what the curve and the pull detection will need when the
+  # views move, and are declared now so the engine gate covers the whole module.
+  store:
+    - boost.map_kpa
+    - boost.baro_kpa
+    - obd.rpm
+    - obd.throttle_pct
+  # From engine/v1's acquisition `field` enum. A module STATES these; the firmware's
+  # enginegen resolves them against the engine profile being built and fails the build when
+  # one is not provided. A module can never make a dongle poll a PID.
+  engine_fields:
+    - map_kpa
+    - baro_kpa
+    - rpm
+    - throttle_pct
+
+derives:
+  # Grandfathered: store/v1 declares this column and the server's decode path computes it
+  # today. This takes over the DEFINITION, not the values.
+  #
+  # A value whenever BOTH readings are present. Deliberately NOT `map_kpa < 255`: a
+  # saturated manifold reading is excluded by the views that read this column
+  # (v_boost_curve, v_pulls), never by the column, and an earlier draft that excluded it
+  # here would have silently turned every saturated sample's boost into NULL. Deliberately
+  # not `baro_kpa > 0` either: the reference treats 0 as a reading, not as absence.
+  - column: boost.boost_psi
+    type: DOUBLE
+    expr: "CASE WHEN map_kpa IS NOT NULL AND baro_kpa IS NOT NULL THEN (map_kpa::DOUBLE - baro_kpa::DOUBLE) * 0.1450377 END"
+    note: >-
+      gauge pressure in psi, negative for vacuum, which is what a throttled engine off
+      boost actually reads. Null when either reading is absent: with no barometric figure
+      the answer is unknown rather than guessed from a sea-level assumption.

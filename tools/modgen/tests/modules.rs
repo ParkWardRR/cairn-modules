@@ -31,21 +31,34 @@ fn shipped_modules_are_valid() {
     assert!(!mods.is_empty(), "there are no modules at all");
 }
 
-/// The case a validator is most likely to get wrong. A module may be nothing but a
-/// manifest -- no metric, no derivation, no engine field, not even a page -- and `boost`
-/// is exactly that at this stage.
+/// The case a validator is most likely to get wrong: a module may be nothing but a
+/// manifest -- no metric, no derivation, no engine field, not even a page. `places` will
+/// be close to it, and a validator that only accepts the full shape would reject it.
+///
+/// Built from a fixture rather than from whichever shipped module happens to be a stub:
+/// `boost` was one until it took over its derivation, and a property test that moves with
+/// the modules is a property test that stops testing the property.
 #[test]
 fn a_declaration_only_module_is_valid_and_generates_nothing() {
-    let mods = modgen::load_dir(&modules_dir()).unwrap();
-    let boost = mods
-        .iter()
-        .find(|m| m.manifest.id == "boost")
-        .expect("boost must exist");
-    assert_eq!(Status::parse(&boost.manifest.status), Some(Status::Stub));
-    assert!(boost.manifest.derives.is_empty());
-    assert!(boost.manifest.metrics.is_empty());
+    let tmp = std::env::temp_dir().join(format!("modgen-stub-{}", std::process::id()));
+    let dir = tmp.join("quiet");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(
+        dir.join("module.yaml"),
+        format!(
+            "schema: {}\nid: quiet\nversion: 1\nname: Claims nothing\nstatus: stub\nsources: [a fixture]\n",
+            manifest::MANIFEST_SCHEMA
+        ),
+    )
+    .unwrap();
 
-    let chosen: Vec<&Module> = vec![boost];
+    let mods = modgen::load_dir(&tmp).expect("a declaration-only module must load");
+    assert_eq!(mods.len(), 1);
+    let m = &mods[0];
+    assert_eq!(Status::parse(&m.manifest.status), Some(Status::Stub));
+    assert!(m.manifest.derives.is_empty() && m.manifest.metrics.is_empty());
+
+    let chosen: Vec<&Module> = mods.iter().collect();
     let fields = modgen::emit::fields(&chosen);
     assert!(
         fields.contains("(none:"),
@@ -53,10 +66,54 @@ fn a_declaration_only_module_is_valid_and_generates_nothing() {
     );
     // The Go artefact is still emitted: the server needs to know the module exists and
     // what its digest is, even when it claims nothing.
-    let go = modgen::emit::go(&chosen, "modules=boost@1/x set=y", "modules");
-    assert!(go.contains("ID:      \"boost\""));
+    let go = modgen::emit::go(&chosen, "modules=quiet@1/x set=y", "modules");
+    assert!(go.contains("ID:      \"quiet\""));
     assert!(!go.contains("Derives:"), "a stub must emit no derivations");
     assert!(!go.contains("Metrics:"), "a stub must emit no metrics");
+
+    std::fs::remove_dir_all(&tmp).ok();
+}
+
+/// The shipped boost module took over a grandfathered column, so it must emit the
+/// derivation and the capture fields it needs -- the other half of the same mechanism.
+#[test]
+fn boost_declares_its_derivation_and_its_capture_fields() {
+    let mods = modgen::load_dir(&modules_dir()).unwrap();
+    let boost = mods
+        .iter()
+        .find(|m| m.manifest.id == "boost")
+        .expect("boost must exist");
+
+    let d = match boost.manifest.derives.as_slice() {
+        [only] => only,
+        other => panic!("boost should own exactly one column, found {}", other.len()),
+    };
+    assert_eq!(d.column, "boost.boost_psi");
+    assert_eq!(d.ty, "DOUBLE");
+
+    // The two mistakes an earlier draft made, pinned here so the manifest cannot drift
+    // back into them. Saturation is excluded by the views that read the column, never by
+    // the column; and the reference treats a barometric 0 as a reading, not as absence.
+    assert!(
+        !d.expr.contains("map_kpa <") && !d.expr.contains("baro_kpa >"),
+        "the derivation must not exclude saturation or treat baro 0 as absent: {}",
+        d.expr
+    );
+    assert!(d.expr.contains("IS NOT NULL"), "{}", d.expr);
+
+    let chosen: Vec<&Module> = vec![boost];
+    let fields = modgen::emit::fields(&chosen);
+    for want in ["map_kpa", "baro_kpa", "rpm", "throttle_pct"] {
+        assert!(
+            fields.contains(want),
+            "{want} missing from the field set:\n{fields}"
+        );
+    }
+    let go = modgen::emit::go(&chosen, "x", "modules");
+    assert!(
+        go.contains("Derives:"),
+        "the Go artefact must carry the derivation"
+    );
 }
 
 /// The contract's own vectors, run against this implementation. `modgen` is the second
